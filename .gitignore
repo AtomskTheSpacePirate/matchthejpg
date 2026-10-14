@@ -1,0 +1,11 @@
+# Kept on this computer only, never pushed to GitHub:
+
+# Full-size original photos (about 200 MB); the site uses the copies in photos-web/
+photos/
+
+# Private scoring calibration data
+unedited-ratings.json
+
+# Windows and OneDrive clutter
+Thumbs.db
+desktop.ini

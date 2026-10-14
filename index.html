@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0b0d">
+  <title>matchthejpg · recreate the photo edit from memory</title>
+  <meta name="description" content="A photo editing game for your eye. Study an edited photo for 5 seconds, then rebuild the look from the unedited jpg with Lightroom-style sliders and colour wheels. Five rounds, scored on how close it looks.">
+  <link rel="canonical" href="https://matchthejpg.com/">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+  <!-- Link previews (social apps, messengers) -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="matchthejpg">
+  <meta property="og:url" content="https://matchthejpg.com/">
+  <meta property="og:title" content="matchthejpg · recreate the photo edit from memory">
+  <meta property="og:description" content="Study an edited photo for 5 seconds, then rebuild the look from the unedited jpg. Five rounds. How good is your eye?">
+  <meta property="og:image" content="https://matchthejpg.com/og-image.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="matchthejpg · recreate the photo edit from memory">
+  <meta name="twitter:description" content="Study an edited photo for 5 seconds, then rebuild the look from the unedited jpg. Five rounds. How good is your eye?">
+  <meta name="twitter:image" content="https://matchthejpg.com/og-image.jpg">
+
+  <!-- Structured data for search engines -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "VideoGame",
+    "name": "matchthejpg",
+    "url": "https://matchthejpg.com/",
+    "description": "A browser game where you study an edited photo for 5 seconds, then recreate the edit from the unedited jpg using brightness, contrast, tone and colour wheel controls.",
+    "genre": ["Puzzle", "Photography"],
+    "gamePlatform": "Web browser",
+    "applicationCategory": "Game",
+    "operatingSystem": "Any",
+    "image": "https://matchthejpg.com/og-image.jpg",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+  }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app" data-phase="ready">
+    <header class="top">
+      <span class="wordmark">matchthe<span>jpg</span></span>
+      <div class="progress" aria-hidden="true">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      </div>
+      <span class="tag" id="phase"></span>
+    </header>
+
+    <main class="play">
+      <section class="stage">
+        <div class="frames">
+          <figure class="frame frame-original">
+            <canvas id="original"></canvas>
+            <figcaption>The edit</figcaption>
+          </figure>
+          <figure class="frame frame-guess">
+            <canvas id="view"></canvas>
+            <figcaption>Your edit</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <aside class="panel">
+        <div class="pane pane-ready">
+          <h1>Recreate the edit from memory</h1>
+          <p>Five rounds, each harder than the last. You get 5 seconds with an edited photo, then the unedited one to rebuild the edit yourself.</p>
+          <button id="start" type="button" class="primary">Start</button>
+        </div>
+
+        <div class="pane pane-memorise">
+          <div class="ring">
+            <svg viewBox="0 0 120 120" aria-hidden="true">
+              <circle class="ring-track" cx="60" cy="60" r="54"></circle>
+              <circle class="ring-progress" cx="60" cy="60" r="54"></circle>
+            </svg>
+            <span id="count">5</span>
+          </div>
+          <p>Memorise the edit</p>
+        </div>
+
+        <div class="pane pane-edit">
+          <div id="sliders"></div>
+          <div class="actions">
+            <button id="reset" type="button">Reset</button>
+            <button id="submit" type="button" class="primary">Submit</button>
+          </div>
+        </div>
+
+        <div class="pane pane-result">
+          <div class="score"><span id="score">0</span><span class="unit">%</span></div>
+          <p class="score-label">match</p>
+          <button id="next" type="button" class="primary">Next round</button>
+        </div>
+
+        <div class="pane pane-final">
+          <p class="score-label">Average match</p>
+          <div class="score"><span id="final-score">0</span><span class="unit">%</span></div>
+          <p class="verdict" id="verdict"></p>
+          <ol class="recap" id="recap"></ol>
+          <button id="again" type="button" class="primary">Play again</button>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
