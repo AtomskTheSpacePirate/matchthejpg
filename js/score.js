@@ -9,6 +9,10 @@
 // 2. Tint direction: in the shadows, midtones and highlights, a tint pushed the opposite way
 //    from the target's (pink instead of yellow) is penalised; the same direction at a
 //    different strength is not. The eye judges colour direction harshly and strength gently.
+//    A tint is what the colour wheels did to the picture (the picture with them minus without
+//    them), so saturation and the other sliders don't count as tints.
+// For the result screen the score is split into a Light part (the band difference counting
+// lightness alone) and a Colour part (everything else); Light times Colour is the score.
 
 import { createRenderer } from './renderer.js';
 
@@ -21,8 +25,27 @@ const COLOUR_WEIGHT = 2.5; // colour cast and saturation count this much more th
 // fitted to the ratings.
 const BAND_WEIGHT = 4.42;
 const DIRECTION_WEIGHT = 8.43;
+// Trial: the round's % is the average of Light and Colour. false puts back the scoring fitted
+// to the ratings (the bars are then only a guide).
+const AVERAGE_PARTS = true;
+// In that average the weaker part counts this many times (2: Light 99, Colour 49 -> 66).
+// 1 is a plain average.
+const WEAKER_WEIGHT = 2;
+// Trial: each part is raised to this power so weak matches drop further (2.25: 90 -> 79,
+// 70 -> 45, 50 -> 21). 1 puts back the curve fitted to the ratings.
+const PART_POWER = 2.25;
+// Lightness counts this much in the Light part: fitting Light and Colour separately to the
+// ratings gave lightness about a third of its weight here (1.42 against 4.42). 1 is unscaled.
+const LIGHT_SCALE = 0.32;
+// Trial: false leaves the tint-direction penalty out of the Colour part, which then measures
+// only how different the colours look. true adds it back on top.
+const DIRECTION_PENALTY = false;
+// Colour differences up to this much (in OKLab, where about 0.02 is just noticeable) cost
+// nothing in the Colour part; above it only the excess counts. 0 counts every difference.
+const COLOUR_TOLERANCE = 0.02;
 
 const HINT_MIN = 0.05; // smallest difference worth a hint, in distance (about 5 points off the score)
+const LIGHT_VISIBLE = 0.03; // smallest lightness difference in a range worth a hint (3% of black to white)
 const MAX_HINTS = 3;
 const TONES = ['Shadows', 'Midtones', 'Highlights'];
 // OKLab hue angles of everyday colour names.
@@ -78,17 +101,24 @@ function groupStats(lab, groupOf, count) {
   return stats;
 }
 
-// How far two tints point in different directions, each measured from the unedited photo:
-// 0 when they point the same way, up to their average size when they point opposite ways.
-function directionError(target, player, base) {
-  const ta = target.a - base.a;
-  const tb = target.b - base.b;
-  const pa = player.a - base.a;
-  const pb = player.b - base.b;
-  const tSize = Math.hypot(ta, tb);
-  const pSize = Math.hypot(pa, pb);
+// The same settings with every colour wheel at the centre.
+function withoutWheels(params) {
+  return { ...params, tintSx: 0, tintSy: 0, tintMx: 0, tintMy: 0, tintHx: 0, tintHy: 0 };
+}
+
+// What the colour wheels did to a group of pixels, as an (a, b) shift: its colour with the
+// wheels minus its colour without them. Saturation and the other sliders cancel out.
+function tintOf(withWheels, without) {
+  return { a: withWheels.a - without.a, b: withWheels.b - without.b };
+}
+
+// How far two tints point in different directions: 0 when they point the same way, up to
+// their average size when they point opposite ways.
+function directionError(target, player) {
+  const tSize = Math.hypot(target.a, target.b);
+  const pSize = Math.hypot(player.a, player.b);
   if (tSize < 1e-4 || pSize < 1e-4) return 0;
-  const cos = (ta * pa + tb * pb) / (tSize * pSize);
+  const cos = (target.a * player.a + target.b * player.b) / (tSize * pSize);
   return ((1 - cos) / 2) * (tSize + pSize) / 2;
 }
 
@@ -112,7 +142,9 @@ export function createScorer() {
   renderer.resize(SIZE, SIZE);
   let bandOf = new Uint8Array(0); // brightness band per pixel
   let thirdOf = new Uint8Array(0); // shadows (0), midtones (1), highlights (2) per pixel
-  let baseThirds = [];
+
+  // Shadows/midtones/highlights stats of the picture from these settings.
+  const thirds = (params) => groupStats(toLab(renderer.read(params)), thirdOf, 3);
 
   return {
     setImage(img) {
@@ -134,9 +166,10 @@ export function createScorer() {
         const L = base[i * 3];
         thirdOf[i] = L < low ? 0 : L > high ? 2 : 1;
       }
-      baseThirds = groupStats(base, thirdOf, 3);
     },
     // How different the pictures from two sets of shader settings look; 0 is identical.
+    // `total` is the fitted scoring's distance; `light` and `colour` measure lightness and
+    // colour (cast, saturation and tint direction) each on its own, for the Light and Colour parts.
     distance(a, b) {
       const labA = toLab(renderer.read(a));
       const labB = toLab(renderer.read(b));
@@ -144,76 +177,114 @@ export function createScorer() {
       const bandsA = groupStats(labA, bandOf, BANDS);
       const bandsB = groupStats(labB, bandOf, BANDS);
       let bands = 0;
+      let light = 0;
+      let colour = 0;
       for (let k = 0; k < BANDS; k++) {
         if (!bandsA[k].n) continue;
-        const lightness = k < DARK_BANDS ? SHADOW_LIGHTNESS : 1;
-        const d = Math.hypot(
-          lightness * (bandsA[k].L - bandsB[k].L),
-          COLOUR_WEIGHT * Math.hypot(bandsA[k].a - bandsB[k].a, bandsA[k].b - bandsB[k].b),
-          COLOUR_WEIGHT * (bandsA[k].C - bandsB[k].C));
-        bands += (bandsA[k].n / bandOf.length) * d;
+        const share = bandsA[k].n / bandOf.length;
+        const dL = (k < DARK_BANDS ? SHADOW_LIGHTNESS : 1) * (bandsA[k].L - bandsB[k].L);
+        const dColour = Math.hypot(
+          bandsA[k].a - bandsB[k].a, bandsA[k].b - bandsB[k].b, bandsA[k].C - bandsB[k].C);
+        bands += share * Math.hypot(dL, COLOUR_WEIGHT * dColour);
+        light += share * Math.abs(dL);
+        colour += share * COLOUR_WEIGHT * Math.max(0, dColour - COLOUR_TOLERANCE);
       }
 
+      // Tint direction compares only what each side's colour wheels did to the picture.
       const thirdsA = groupStats(labA, thirdOf, 3);
       const thirdsB = groupStats(labB, thirdOf, 3);
+      const plainA = thirds(withoutWheels(a));
+      const plainB = thirds(withoutWheels(b));
       let direction = 0;
       for (let k = 0; k < 3; k++) {
-        if (thirdsA[k].n) direction += directionError(thirdsA[k], thirdsB[k], baseThirds[k]);
+        if (!thirdsA[k].n) continue;
+        direction += directionError(tintOf(thirdsA[k], plainA[k]), tintOf(thirdsB[k], plainB[k]));
       }
 
-      return BAND_WEIGHT * bands + DIRECTION_WEIGHT * direction;
+      return {
+        total: BAND_WEIGHT * bands + DIRECTION_WEIGHT * direction,
+        light: BAND_WEIGHT * light,
+        colour: BAND_WEIGHT * colour + (DIRECTION_PENALTY ? DIRECTION_WEIGHT * direction : 0),
+        // Each cost on its own, before the Light and Colour curves, for debugging.
+        costs: {
+          light: LIGHT_SCALE * BAND_WEIGHT * light,
+          colourDifference: BAND_WEIGHT * colour,
+          direction: DIRECTION_WEIGHT * direction,
+          directionCounted: DIRECTION_PENALTY,
+        },
+      };
     },
-    // 0-100 from how close the two pictures look: 100 is identical.
-    score(target, player) {
-      return Math.round(100 * Math.exp(-this.distance(target, player)));
+    // 0-100 from how close the two pictures look, 100 is identical, split into Light and
+    // Colour. The score is a mix of the two that leans on the weaker (see AVERAGE_PARTS), or
+    // with AVERAGE_PARTS off, the fitted scoring unchanged.
+    breakdown(target, player) {
+      const d = this.distance(target, player);
+      const light = Math.exp(-LIGHT_SCALE * d.light) ** PART_POWER;
+      const colour = Math.exp(-d.colour) ** PART_POWER;
+      const weaker = Math.min(light, colour);
+      const stronger = Math.max(light, colour);
+      const average = (WEAKER_WEIGHT * weaker + stronger) / (WEAKER_WEIGHT + 1);
+      return {
+        score: Math.round(100 * (AVERAGE_PARTS ? average : Math.exp(-d.total))),
+        light: Math.round(100 * light),
+        colour: Math.round(100 * colour),
+        costs: d.costs,
+      };
     },
     // The biggest visible differences in plain words, worst first; empty when nothing stands
-    // out. Sizes are rough shares of distance(), so the hints agree with the score.
+    // out. Sizes are rough shares of the score's distance, so the hints agree with the score.
     explain(target, player) {
-      const t = groupStats(toLab(renderer.read(target)), thirdOf, 3);
-      const p = groupStats(toLab(renderer.read(player)), thirdOf, 3);
+      const t = thirds(target);
+      const p = thirds(player);
+      const plainT = thirds(withoutWheels(target));
+      const plainP = thirds(withoutWheels(player));
       const hints = [];
       const add = (size, text) => {
         if (size >= HINT_MIN) hints.push({ size, text });
       };
 
-      // Lightness, positive where the player's picture is brighter. All three ranges off the
-      // same way reads as the whole photo; shadows and highlights off opposite ways as contrast.
-      const light = t.map((s, k) =>
-        (BAND_WEIGHT * (k === 0 ? SHADOW_LIGHTNESS : 1) * (p[k].L - s.L)) / 3);
-      if (light.every((v) => v > 0) || light.every((v) => v < 0)) {
-        const total = light[0] + light[1] + light[2];
-        add(Math.abs(total), total > 0 ? 'The whole photo is too bright' : 'The whole photo is too dark');
-      } else if (light[0] * light[2] < 0) {
-        add(Math.abs(light[0]) + Math.abs(light[2]),
-          light[2] > 0 ? 'Too much contrast' : 'Too flat, it needs more contrast');
-        add(Math.abs(light[1]), light[1] > 0 ? 'Midtones too bright' : 'Midtones too dark');
-      } else {
-        light.forEach((v, k) => add(Math.abs(v), TONES[k] + (v > 0 ? ' too bright' : ' too dark')));
-      }
+      // Lightness, split the way the eye reads it (positive where the player's picture is brighter):
+      // brightness is only what shadows and highlights share, contrast is how differently they
+      // moved, and midtones are what is left in between. Each gets a hint once it is visible,
+      // "slightly" while under twice that; sizes are shares of the Light part, for the order.
+      const [dS, dM, dH] = t.map((s, k) => p[k].L - s.L);
+      const shared = dS * dH > 0 ? Math.sign(dS) * Math.min(Math.abs(dS), Math.abs(dH)) : 0;
+      const contrast = dH - dS; // positive: the player's picture has more contrast
+      const mid = dM - (dS + dH) / 2;
+      const lightHint = (d, size, text) => {
+        if (Math.abs(d) < LIGHT_VISIBLE) return;
+        const slight = Math.abs(d) < 2 * LIGHT_VISIBLE;
+        hints.push({ size: LIGHT_SCALE * BAND_WEIGHT * size, text: text(slight) });
+      };
+      lightHint(shared, Math.abs(shared), (slight) =>
+        'The whole photo is ' + (slight ? 'slightly ' : '') + (shared > 0 ? 'too bright' : 'too dark'));
+      lightHint(contrast, Math.abs(contrast) / 3, (slight) => (contrast > 0
+        ? (slight ? 'Slightly too much contrast' : 'Too much contrast')
+        : (slight ? 'Slightly flat, it needs a bit more contrast' : 'Too flat, it needs more contrast')));
+      lightHint(mid, Math.abs(mid) / 3, (slight) =>
+        'Midtones ' + (slight ? 'slightly ' : '') + (mid > 0 ? 'too bright' : 'too dark'));
 
       const chroma = (p[0].C + p[1].C + p[2].C - t[0].C - t[1].C - t[2].C) / 3;
-      add(BAND_WEIGHT * COLOUR_WEIGHT * Math.abs(chroma),
+      add(BAND_WEIGHT * COLOUR_WEIGHT * Math.max(0, Math.abs(chroma) - COLOUR_TOLERANCE),
         chroma > 0 ? 'Colours too strong' : 'Colours too muted');
 
-      // Colour cast per range, as tints measured from the unedited photo.
+      // Colour cast per range from the wheels alone (what each side's wheels did to the picture),
+      // so saturation differences show up only in the hint above.
       for (let k = 0; k < 3; k++) {
-        const base = baseThirds[k];
-        const ta = t[k].a - base.a;
-        const tb = t[k].b - base.b;
-        const pa = p[k].a - base.a;
-        const pb = p[k].b - base.b;
-        const size = BAND_WEIGHT * COLOUR_WEIGHT * Math.hypot(ta - pa, tb - pb) / 3 +
-          DIRECTION_WEIGHT * directionError(t[k], p[k], base);
-        const tSize = Math.hypot(ta, tb);
-        const pSize = Math.hypot(pa, pb);
-        const cos = tSize && pSize ? (ta * pa + tb * pb) / (tSize * pSize) : 0;
+        const tt = tintOf(t[k], plainT[k]);
+        const pt = tintOf(p[k], plainP[k]);
+        const size =
+          BAND_WEIGHT * COLOUR_WEIGHT * Math.max(0, Math.hypot(tt.a - pt.a, tt.b - pt.b) - COLOUR_TOLERANCE) / 3 +
+          (DIRECTION_PENALTY ? DIRECTION_WEIGHT * directionError(tt, pt) : 0);
+        const tSize = Math.hypot(tt.a, tt.b);
+        const pSize = Math.hypot(pt.a, pt.b);
+        const cos = tSize && pSize ? (tt.a * pt.a + tt.b * pt.b) / (tSize * pSize) : 0;
         if (cos < 0) {
-          add(size, TONES[k] + ' went ' + hueName(pa, pb) + ', the edit went ' + hueName(ta, tb));
+          add(size, TONES[k] + ' went ' + hueName(pt.a, pt.b) + ', the edit went ' + hueName(tt.a, tt.b));
         } else if (cos > 0.7 && pSize > tSize) {
-          add(size, TONES[k] + ' too ' + hueName(pa, pb));
+          add(size, TONES[k] + ' too ' + hueName(pt.a, pt.b));
         } else {
-          add(size, TONES[k] + ' need more ' + hueName(ta - pa, tb - pb));
+          add(size, TONES[k] + ' need more ' + hueName(tt.a - pt.a, tt.b - pt.b));
         }
       }
 

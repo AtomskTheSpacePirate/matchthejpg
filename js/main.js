@@ -30,6 +30,8 @@ const DIFFICULTY = [
   { sliders: 4, wheels: 3 },
 ];
 const ROUNDS = DIFFICULTY.length;
+const MAX_UNEDITED_SCORE = 40; // an edit must be strong enough that doing nothing scores at most this
+const MAX_EDIT_TRIES = 20;
 
 // Final verdict by average match, highest first.
 const VERDICTS = [
@@ -59,6 +61,7 @@ const phaseLabel = document.getElementById('phase');
 const countEl = document.getElementById('count');
 const scoreEl = document.getElementById('score');
 const nextButton = document.getElementById('next');
+const partsEl = document.getElementById('parts');
 const hintsEl = document.getElementById('hints');
 const revealButton = document.getElementById('reveal');
 const revealTable = document.getElementById('reveal-table');
@@ -188,17 +191,34 @@ async function newGame() {
   startRound();
 }
 
+// A random edit for the scorer's current photo that is clearly visible: one where submitting
+// the unedited photo would score at most MAX_UNEDITED_SCORE. Sliders can cancel each other out,
+// so edits are rolled again; after MAX_EDIT_TRIES the most visible one is used.
+function makeVisibleRound(level) {
+  let best = null;
+  let bestScore = Infinity;
+  for (let i = 0; i < MAX_EDIT_TRIES; i++) {
+    const next = makeRound(level.sliders, level.wheels);
+    const unedited = scorer.breakdown(next.look, ZERO).score;
+    if (unedited <= MAX_UNEDITED_SCORE) return next;
+    if (unedited < bestScore) {
+      best = next;
+      bestScore = unedited;
+    }
+  }
+  return best;
+}
+
 // Show the edited photo for a few seconds, then hand over the unedited one.
 async function startRound() {
   const img = await loadImage(photos[roundNo]);
   if (roundNo + 1 < ROUNDS) new Image().src = photos[roundNo + 1]; // warm the cache
 
-  const level = DIFFICULTY[roundNo];
-  round = makeRound(level.sliders, level.wheels);
   image = img;
   aspect = img.naturalWidth / img.naturalHeight;
   view.classList.add('is-hidden');
   for (const target of [renderer, original, scorer]) target.setImage(img);
+  round = makeVisibleRound(DIFFICULTY[roundNo]);
   renderer.setParams(round.look);
   original.setParams(round.look);
   paintDots();
@@ -230,14 +250,36 @@ function beginEdit() {
 
 function submit() {
   const player = sliders.values();
-  const score = scorer.score(round.look, player);
+  const { score, light, colour, costs } = scorer.breakdown(round.look, player);
+  console.log('[score]', { score, light, colour, ...costs }); // temporary, while tuning the scoring
   results.push({ img: image, look: round.look, player, score });
+  showParts([['Light', light], ['Colour', colour]]);
   showHints(scorer.explain(round.look, player));
   fillReveal(round.look, player);
   nextButton.textContent = results.length < ROUNDS ? 'Next round' : 'See results';
   paintDots();
   setPhase('result');
   countUp(scoreEl, score);
+}
+
+// A bar per part of the score, coloured like the score itself.
+function showParts(parts) {
+  partsEl.replaceChildren(...parts.flatMap(([name, value]) => {
+    const label = document.createElement('span');
+    label.className = 'part-name';
+    label.textContent = name;
+    const bar = document.createElement('span');
+    bar.className = 'part-bar';
+    const fill = document.createElement('span');
+    fill.style.width = value + '%';
+    fill.style.background = scoreColor(value);
+    bar.append(fill);
+    const number = document.createElement('span');
+    number.className = 'part-value';
+    number.textContent = value;
+    number.style.color = scoreColor(value);
+    return [label, bar, number];
+  }));
 }
 
 function showHints(hints) {

@@ -370,11 +370,57 @@ body {
   overflow-y: auto;
 }
 
+/* Scroll instead of squashing: buttons (overflow: hidden) would otherwise shrink to fit. */
+.pane-result > * { flex-shrink: 0; }
+
+/* Score parts: a name, a bar filled to the part's score, and its number */
+.parts {
+  display: grid;
+  grid-template-columns: auto 1fr 2.2em;
+  align-items: center;
+  gap: 8px 12px;
+  width: 100%;
+  margin-top: 22px;
+}
+
+.part-name {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.part-bar {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--line);
+}
+
+.part-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  animation: grow 0.9s var(--ease) both;
+}
+
+@keyframes grow {
+  from { width: 0; }
+}
+
+.part-value {
+  font-size: 15px;
+  font-weight: 700;
+  text-align: right;
+}
+
 .hints {
   display: grid;
   gap: 6px;
   width: 100%;
-  margin: 24px 0 0;
+  margin: 16px 0 0;
   padding: 0;
   list-style: none;
   text-align: left;
@@ -754,7 +800,8 @@ button.is-waving::after { animation: wave 0.5s var(--ease); }
   .pane-result { padding: 18px 20px; }
   /* Keep both photos visible when the hints or the settings table are long. */
   .app[data-phase='result'] .panel { max-height: 55dvh; }
-  .hints { margin-top: 16px; }
+  .parts { margin-top: 14px; }
+  .hints { margin-top: 12px; }
   .pane-result #reveal { margin-top: 14px; }
   .score { font-size: 72px; }
   .score .unit { font-size: 32px; }
@@ -763,7 +810,7 @@ button.is-waving::after { animation: wave 0.5s var(--ease); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .slider, .wheel-cell, .recap li, .hints li, .dot.is-done { animation: none; }
+  .slider, .wheel-cell, .recap li, .hints li, .part-bar span, .dot.is-done { animation: none; }
   button.is-waving, button.is-waving::after { animation: none; }
   #view, button, input[type='range']::-webkit-slider-thumb { transition: none; }
 }
