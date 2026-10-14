@@ -30,7 +30,7 @@ const DIFFICULTY = [
   { sliders: 4, wheels: 3 },
 ];
 const ROUNDS = DIFFICULTY.length;
-const MAX_UNEDITED_SCORE = 40; // an edit must be strong enough that doing nothing scores at most this
+const MAX_UNEDITED_SCORE = 45; // an edit must be strong enough that doing nothing scores at most this
 const MAX_EDIT_TRIES = 20;
 
 // Final verdict by average match, highest first.
