@@ -364,6 +364,68 @@ body {
   text-transform: uppercase;
 }
 
+/* Hints and the revealed settings can outgrow the card, so it scrolls. */
+.pane-result {
+  justify-content: safe center;
+  overflow-y: auto;
+}
+
+.hints {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  margin: 24px 0 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+
+.hints li {
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.35;
+  animation: rise 0.5s var(--ease) both;
+  animation-delay: calc(var(--i) * 90ms + 300ms);
+}
+
+.hints li.is-close {
+  color: var(--muted);
+  text-align: center;
+}
+
+.pane-result #reveal { margin-top: 20px; }
+.pane-result #next { margin-top: 10px; }
+
+.reveal-table {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 6px 16px;
+  width: 100%;
+  margin-top: 14px;
+  font-size: 14px;
+  text-align: left;
+}
+
+.reveal-table[hidden] { display: none; }
+
+.reveal-head {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  border-radius: 50%;
+}
+
 #sliders {
   flex: 1;
   min-height: 0;
@@ -690,6 +752,10 @@ button.is-waving::after { animation: wave 0.5s var(--ease); }
   .app[data-phase='result'] .play { grid-template-rows: minmax(0, 1fr) auto; }
 
   .pane-result { padding: 18px 20px; }
+  /* Keep both photos visible when the hints or the settings table are long. */
+  .app[data-phase='result'] .panel { max-height: 55dvh; }
+  .hints { margin-top: 16px; }
+  .pane-result #reveal { margin-top: 14px; }
   .score { font-size: 72px; }
   .score .unit { font-size: 32px; }
   .pane-ready button, .pane-result button, .pane-final button { margin-top: 18px; }
@@ -697,7 +763,7 @@ button.is-waving::after { animation: wave 0.5s var(--ease); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .slider, .wheel-cell, .recap li, .dot.is-done { animation: none; }
+  .slider, .wheel-cell, .recap li, .hints li, .dot.is-done { animation: none; }
   button.is-waving, button.is-waving::after { animation: none; }
   #view, button, input[type='range']::-webkit-slider-thumb { transition: none; }
 }

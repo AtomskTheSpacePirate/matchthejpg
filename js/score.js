@@ -22,6 +22,15 @@ const COLOUR_WEIGHT = 2.5; // colour cast and saturation count this much more th
 const BAND_WEIGHT = 4.42;
 const DIRECTION_WEIGHT = 8.43;
 
+const HINT_MIN = 0.05; // smallest difference worth a hint, in distance (about 5 points off the score)
+const MAX_HINTS = 3;
+const TONES = ['Shadows', 'Midtones', 'Highlights'];
+// OKLab hue angles of everyday colour names.
+const HUES = [
+  [29, 'red'], [60, 'orange'], [105, 'yellow'], [142, 'green'],
+  [195, 'cyan'], [264, 'blue'], [300, 'purple'], [340, 'pink'],
+];
+
 // sRGB byte -> linear light
 const LINEAR = new Float32Array(256);
 for (let i = 0; i < 256; i++) {
@@ -83,6 +92,21 @@ function directionError(target, player, base) {
   return ((1 - cos) / 2) * (tSize + pSize) / 2;
 }
 
+// Nearest colour name for an OKLab (a, b) direction.
+function hueName(a, b) {
+  const deg = ((Math.atan2(b, a) * 180) / Math.PI + 360) % 360;
+  let best = HUES[0];
+  let gap = 360;
+  for (const hue of HUES) {
+    const d = Math.min(Math.abs(deg - hue[0]), 360 - Math.abs(deg - hue[0]));
+    if (d < gap) {
+      gap = d;
+      best = hue;
+    }
+  }
+  return best[1];
+}
+
 export function createScorer() {
   const renderer = createRenderer(document.createElement('canvas'));
   renderer.resize(SIZE, SIZE);
@@ -142,6 +166,58 @@ export function createScorer() {
     // 0-100 from how close the two pictures look: 100 is identical.
     score(target, player) {
       return Math.round(100 * Math.exp(-this.distance(target, player)));
+    },
+    // The biggest visible differences in plain words, worst first; empty when nothing stands
+    // out. Sizes are rough shares of distance(), so the hints agree with the score.
+    explain(target, player) {
+      const t = groupStats(toLab(renderer.read(target)), thirdOf, 3);
+      const p = groupStats(toLab(renderer.read(player)), thirdOf, 3);
+      const hints = [];
+      const add = (size, text) => {
+        if (size >= HINT_MIN) hints.push({ size, text });
+      };
+
+      // Lightness, positive where the player's picture is brighter. All three ranges off the
+      // same way reads as the whole photo; shadows and highlights off opposite ways as contrast.
+      const light = t.map((s, k) =>
+        (BAND_WEIGHT * (k === 0 ? SHADOW_LIGHTNESS : 1) * (p[k].L - s.L)) / 3);
+      if (light.every((v) => v > 0) || light.every((v) => v < 0)) {
+        const total = light[0] + light[1] + light[2];
+        add(Math.abs(total), total > 0 ? 'The whole photo is too bright' : 'The whole photo is too dark');
+      } else if (light[0] * light[2] < 0) {
+        add(Math.abs(light[0]) + Math.abs(light[2]),
+          light[2] > 0 ? 'Too much contrast' : 'Too flat, it needs more contrast');
+        add(Math.abs(light[1]), light[1] > 0 ? 'Midtones too bright' : 'Midtones too dark');
+      } else {
+        light.forEach((v, k) => add(Math.abs(v), TONES[k] + (v > 0 ? ' too bright' : ' too dark')));
+      }
+
+      const chroma = (p[0].C + p[1].C + p[2].C - t[0].C - t[1].C - t[2].C) / 3;
+      add(BAND_WEIGHT * COLOUR_WEIGHT * Math.abs(chroma),
+        chroma > 0 ? 'Colours too strong' : 'Colours too muted');
+
+      // Colour cast per range, as tints measured from the unedited photo.
+      for (let k = 0; k < 3; k++) {
+        const base = baseThirds[k];
+        const ta = t[k].a - base.a;
+        const tb = t[k].b - base.b;
+        const pa = p[k].a - base.a;
+        const pb = p[k].b - base.b;
+        const size = BAND_WEIGHT * COLOUR_WEIGHT * Math.hypot(ta - pa, tb - pb) / 3 +
+          DIRECTION_WEIGHT * directionError(t[k], p[k], base);
+        const tSize = Math.hypot(ta, tb);
+        const pSize = Math.hypot(pa, pb);
+        const cos = tSize && pSize ? (ta * pa + tb * pb) / (tSize * pSize) : 0;
+        if (cos < 0) {
+          add(size, TONES[k] + ' went ' + hueName(pa, pb) + ', the edit went ' + hueName(ta, tb));
+        } else if (cos > 0.7 && pSize > tSize) {
+          add(size, TONES[k] + ' too ' + hueName(pa, pb));
+        } else {
+          add(size, TONES[k] + ' need more ' + hueName(ta - pa, tb - pb));
+        }
+      }
+
+      return hints.sort((x, y) => y.size - x.size).slice(0, MAX_HINTS).map((h) => h.text);
     },
   };
 }

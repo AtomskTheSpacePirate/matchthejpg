@@ -59,6 +59,9 @@ const phaseLabel = document.getElementById('phase');
 const countEl = document.getElementById('count');
 const scoreEl = document.getElementById('score');
 const nextButton = document.getElementById('next');
+const hintsEl = document.getElementById('hints');
+const revealButton = document.getElementById('reveal');
+const revealTable = document.getElementById('reveal-table');
 const finalScoreEl = document.getElementById('final-score');
 const verdictEl = document.getElementById('verdict');
 const recapEl = document.getElementById('recap');
@@ -229,10 +232,84 @@ function submit() {
   const player = sliders.values();
   const score = scorer.score(round.look, player);
   results.push({ img: image, look: round.look, player, score });
+  showHints(scorer.explain(round.look, player));
+  fillReveal(round.look, player);
   nextButton.textContent = results.length < ROUNDS ? 'Next round' : 'See results';
   paintDots();
   setPhase('result');
   countUp(scoreEl, score);
+}
+
+function showHints(hints) {
+  const items = hints.length ? hints : ['Very close, nothing stands out'];
+  hintsEl.replaceChildren(...items.map((text, i) => {
+    const li = document.createElement('li');
+    li.style.setProperty('--i', i);
+    li.textContent = text;
+    li.classList.toggle('is-close', !hints.length);
+    return li;
+  }));
+}
+
+// Colour wheel names by hsl() hue, which is also the wheel's angle (red to the right, up is 90).
+const WHEEL_HUES = [
+  [0, 'red'], [30, 'orange'], [60, 'yellow'], [120, 'green'],
+  [180, 'cyan'], [240, 'blue'], [280, 'purple'], [320, 'pink'], [360, 'red'],
+];
+
+// One table cell showing a slider value (+41) or a wheel position (a dot of its colour, its
+// name and strength); a dash when the control is untouched.
+function valueCell(def, values) {
+  const cell = document.createElement('span');
+  if (def.type !== 'wheel') {
+    const v = Math.round((values[def.key] || 0) * 100);
+    cell.textContent = v > 0 ? '+' + v : v ? String(v) : '–';
+    return cell;
+  }
+  const x = values[def.key + 'x'] || 0;
+  const y = values[def.key + 'y'] || 0;
+  const strength = Math.round(Math.hypot(x, y) * 100);
+  if (!strength) {
+    cell.textContent = '–';
+    return cell;
+  }
+  const hue = ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+  const name = WHEEL_HUES.reduce((best, h) => (Math.abs(h[0] - hue) < Math.abs(best[0] - hue) ? h : best))[1];
+  const swatch = document.createElement('span');
+  swatch.className = 'swatch';
+  swatch.style.background = 'hsl(' + Math.round(hue) + ' 85% 55%)';
+  cell.append(swatch, name + ' ' + strength);
+  return cell;
+}
+
+// The edit's actual settings next to the player's, for every control either of them moved.
+function fillReveal(look, player) {
+  const cells = [];
+  for (const text of ['', 'Edit', 'You']) {
+    const head = document.createElement('span');
+    head.className = 'reveal-head';
+    head.textContent = text;
+    cells.push(head);
+  }
+  for (const def of SLIDERS) {
+    const used = (values) => (def.type === 'wheel'
+      ? values[def.key + 'x'] || values[def.key + 'y']
+      : values[def.key]);
+    if (!used(look) && !used(player)) continue;
+    const name = document.createElement('span');
+    name.textContent = def.type === 'wheel' ? def.label + ' tint' : def.label;
+    cells.push(name, valueCell(def, look), valueCell(def, player));
+  }
+  revealTable.replaceChildren(...cells);
+  revealTable.hidden = true;
+  revealButton.textContent = 'Show the edit';
+  revealButton.setAttribute('aria-expanded', 'false');
+}
+
+function toggleReveal() {
+  revealTable.hidden = !revealTable.hidden;
+  revealButton.textContent = revealTable.hidden ? 'Show the edit' : 'Hide the edit';
+  revealButton.setAttribute('aria-expanded', String(!revealTable.hidden));
 }
 
 function next() {
@@ -292,6 +369,7 @@ document.getElementById('again').addEventListener('click', newGame);
 document.getElementById('reset').addEventListener('click', () => sliders.set(ZERO));
 document.getElementById('submit').addEventListener('click', submit);
 nextButton.addEventListener('click', next);
+revealButton.addEventListener('click', toggleReveal);
 
 enableButtonWave();
 new ResizeObserver(fit).observe(stage);
