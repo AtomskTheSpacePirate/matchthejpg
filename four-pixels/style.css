@@ -1,0 +1,425 @@
+/* Match Pixel Colors. Colours, buttons and the wordmark come from css/base.css. */
+
+:root {
+  --right: #3ecf6e;
+  --wrong: #ff4d4d;
+}
+
+.app {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 100dvh;
+}
+
+/* Header: wordmark, round dots, phase */
+
+.top {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 18px 24px 14px;
+}
+
+.top .tag { justify-self: end; }
+
+.progress {
+  display: flex;
+  gap: 8px;
+}
+
+.app[data-phase='ready'] .progress,
+.app[data-phase='final'] .progress {
+  visibility: hidden;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--line);
+  transition: background 0.4s, box-shadow 0.4s, transform 0.4s var(--ease);
+}
+
+.dot.is-current {
+  background: transparent;
+  box-shadow: inset 0 0 0 2px var(--accent);
+  transform: scale(1.2);
+}
+
+.dot.is-right { background: var(--right); }
+.dot.is-wrong { background: var(--wrong); }
+
+/* One pane per phase */
+
+.play {
+  display: grid;
+  place-items: center;
+  padding: 0 24px 32px;
+}
+
+.pane-ready,
+.pane-round,
+.pane-final {
+  display: none;
+}
+
+.app[data-phase='ready'] .pane-ready,
+.app[data-phase='final'] .pane-final {
+  display: flex;
+}
+
+.app[data-phase='round'] .pane-round { display: block; }
+
+/* Start and results cards */
+
+.card {
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 440px;
+  padding: 28px 24px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  text-align: center;
+  animation: rise 0.5s var(--ease) both;
+}
+
+.card h1 {
+  margin: 0 0 12px;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.card p.kicker {
+  margin-bottom: 10px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.card > button {
+  width: 100%;
+  margin-top: 28px;
+}
+
+/* A round: the pixel band, then the photos to choose from */
+
+.pane-round {
+  width: 100%;
+  max-width: 860px;
+}
+
+.prompt {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+/* --n pixels in a row (set in main.js), up to about 90px each, never wider than the screen */
+.band {
+  display: grid;
+  grid-template-columns: repeat(var(--n, 4), 1fr);
+  gap: 10px;
+  max-width: calc(var(--n, 4) * 100px);
+  margin: 0 auto 24px;
+}
+
+.pixel {
+  aspect-ratio: 1;
+  border-radius: 12px;
+  background: var(--c);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  animation: pixel-in 0.45s var(--ease) both;
+  animation-delay: calc(var(--i) * 70ms);
+}
+
+/* Round timer: a bar that drains (scaled in main.js) and the seconds left, red near the end */
+.timer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 400px;
+  margin: -8px auto 22px;
+}
+
+.timer-track {
+  flex: 1;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--line);
+}
+
+.timer-bar {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transform-origin: left;
+}
+
+.timer-secs {
+  min-width: 1.4em;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.timer.is-low .timer-bar { background: var(--wrong); }
+.timer.is-low .timer-secs { color: var(--wrong); }
+
+/* Once answered the timer stops where it was and steps back. */
+.pane-round.is-answered .timer { opacity: 0.4; }
+
+@keyframes pixel-in {
+  from { opacity: 0; transform: scale(0.6); }
+}
+
+.options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+/* A photo option is a button, but without the usual button size and click wave. */
+.option {
+  position: relative;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  padding: 0;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+  animation: rise 0.5s var(--ease) both;
+  animation-delay: calc(var(--i) * 80ms + 200ms);
+  transition: border-color 0.2s, opacity 0.3s, transform 0.15s var(--ease);
+}
+
+.option::after { display: none; }
+.option.is-waving { animation: none; }
+
+.option img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.option:disabled { cursor: default; }
+.option:disabled:active { transform: none; }
+
+/* After answering: the source in green, a wrong pick in red, the rest faded */
+.pane-round.is-answered .option { opacity: 0.4; }
+.pane-round.is-answered .option.is-right,
+.pane-round.is-answered .option.is-wrong { opacity: 1; }
+.option.is-right { border-color: var(--right); }
+.option.is-wrong { border-color: var(--wrong); }
+
+.badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 4px 9px;
+  border-radius: 7px;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  animation: rise 0.35s var(--ease) both;
+}
+
+.option.is-right .badge { background: var(--right); }
+.option.is-wrong .badge { background: var(--wrong); }
+
+/* Where each pixel came from, on the source photo */
+.marker {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--c);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.55), 0 4px 10px rgba(0, 0, 0, 0.5);
+  animation: pixel-in 0.4s var(--ease) both;
+  animation-delay: calc(var(--i) * 90ms + 150ms);
+}
+
+.after {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 22px;
+  visibility: hidden;
+}
+
+.pane-round.is-answered .after {
+  visibility: visible;
+  animation: rise 0.4s var(--ease) both;
+}
+
+.round-verdict {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.after button {
+  width: 100%;
+  max-width: 320px;
+}
+
+/* Results */
+
+.score {
+  font-size: 96px;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  line-height: 1;
+}
+
+.score .unit {
+  margin-left: 6px;
+  color: var(--muted);
+  font-size: 40px;
+  letter-spacing: 0;
+}
+
+.card p.score-label {
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.card p.verdict {
+  margin-top: 10px;
+  color: var(--text);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.recap {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  margin: 28px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recap li {
+  display: grid;
+  grid-template-columns: 16px auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  animation: rise 0.5s var(--ease) both;
+  animation-delay: calc(var(--i) * 90ms + 300ms);
+}
+
+.recap-no {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* The round's pixels in two rows, as many columns as needed */
+.mini-band {
+  display: grid;
+  grid-template-rows: repeat(2, 14px);
+  grid-auto-columns: 14px;
+  grid-auto-flow: column;
+  gap: 3px;
+}
+
+.mini-band span {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  background: var(--c);
+}
+
+.recap-photos {
+  display: flex;
+  gap: 6px;
+}
+
+.recap-photos img {
+  width: 56px;
+  height: 42px;
+  border: 2px solid var(--right);
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.recap-photos img.is-wrong { border-color: var(--wrong); }
+
+.recap-late {
+  align-self: center;
+  color: var(--wrong);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.recap-mark {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.recap-mark.is-right { color: var(--right); }
+.recap-mark.is-wrong { color: var(--wrong); }
+
+.all-games {
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.all-games:hover { color: var(--text); }
+
+@media (max-width: 820px) {
+  .top { padding: 12px 16px 10px; }
+  /* Ten dots and the round label have to share the header with the wordmark. */
+  .progress { gap: 4px; }
+  .dot { width: 6px; height: 6px; }
+  .tag-word { display: none; }
+  .play { padding: 0 16px 24px; }
+  .band { gap: 8px; max-width: calc(var(--n, 4) * 80px); margin-bottom: 18px; }
+  .timer { margin: -6px auto 16px; }
+  .options { gap: 8px; }
+  .option { aspect-ratio: 3 / 4; }
+  .marker { width: 16px; height: 16px; margin: -8px 0 0 -8px; }
+  .badge { top: 6px; left: 6px; padding: 3px 7px; font-size: 11px; }
+  .card > button { margin-top: 20px; }
+  .score { font-size: 72px; }
+  .score .unit { font-size: 32px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pixel, .option, .marker, .badge, .recap li, .card, .pane-round.is-answered .after { animation: none; }
+}

@@ -46,6 +46,16 @@ try {
       $inside = $file.StartsWith($root + [IO.Path]::DirectorySeparatorChar)
       if ($file -eq $manifest) { Update-PhotoManifest }
 
+      # A folder address (each game has one) serves that folder's index.html, like GitHub Pages.
+      # Without the trailing slash, redirect to it first so the page's relative links work.
+      $folder = $inside -and (Test-Path -LiteralPath $file -PathType Container)
+      if ($folder -and -not $ctx.Request.Url.AbsolutePath.EndsWith('/')) {
+        $ctx.Response.StatusCode = 301
+        $ctx.Response.RedirectLocation = $ctx.Request.Url.AbsolutePath + '/'
+        continue
+      }
+      if ($folder) { $file = Join-Path $file 'index.html' }
+
       if ($inside -and (Test-Path -LiteralPath $file -PathType Leaf)) {
         $bytes = [IO.File]::ReadAllBytes($file)
         $type = $mime[[IO.Path]::GetExtension($file).ToLower()]

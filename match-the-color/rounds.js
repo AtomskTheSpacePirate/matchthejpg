@@ -62,13 +62,16 @@ export function makeRound(count = 4, wheelCount = WHEELS.length) {
   return { look };
 }
 
+// The photo folder, found from this script's own address so any page in any folder can use it.
+const PHOTOS = new URL('../photos-web/', import.meta.url);
+
 // The photo pool: every image listed in photos-web/manifest.json. serve.ps1 rebuilds that list
 // from the folder whenever it is requested, so adding a photo to photos-web is enough.
 export async function loadPhotos() {
-  const response = await fetch('photos-web/manifest.json', { cache: 'no-cache' });
+  const response = await fetch(new URL('manifest.json', PHOTOS), { cache: 'no-cache' });
   if (!response.ok) throw new Error('Photo list not found');
   const names = await response.json();
-  return names.map((name) => 'photos-web/' + name);
+  return names.map((name) => new URL(name, PHOTOS).href);
 }
 
 // Fisher-Yates shuffle; returns a new array.

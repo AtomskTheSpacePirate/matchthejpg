@@ -1,7 +1,8 @@
 import { createRenderer } from './renderer.js';
 import { loadPhotos, shuffle, makeRound } from './rounds.js';
 import { createScorer } from './score.js';
-import { buildSliders, enableButtonWave } from './ui.js';
+import { buildSliders } from './ui.js';
+import { enableButtonWave } from '../js/buttons.js';
 
 const SLIDERS = [
   { key: 'brightness', label: 'Brightness', group: 'Light', min: -100, max: 100 },

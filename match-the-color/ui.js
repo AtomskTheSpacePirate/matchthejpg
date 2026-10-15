@@ -6,27 +6,6 @@ const WHEEL_SNAP = 0.08; // same idea for a wheel, as a fraction of its radius
 const WHEEL_STEP = 0.02; // arrow-key nudge
 const DOT_RADIUS = 7; // half of .wheel-dot's size in style.css
 
-// Plays the click wave on any button: on press for mouse and touch, on activation for keyboard.
-export function enableButtonWave() {
-  function wave(button) {
-    button.classList.remove('is-waving');
-    void button.offsetWidth; // restart the animation on rapid clicks
-    button.classList.add('is-waving');
-  }
-
-  document.addEventListener('pointerdown', (e) => {
-    const button = e.target.closest('button');
-    if (button) wave(button);
-  });
-  document.addEventListener('click', (e) => {
-    const button = e.target.closest('button');
-    if (button && e.detail === 0) wave(button);
-  });
-  document.addEventListener('animationend', (e) => {
-    if (e.animationName === 'wave') e.target.classList.remove('is-waving');
-  });
-}
-
 // defs are sliders ({ key, label, group, min, max }) or wheels ({ type: 'wheel', key, label, group }).
 // A wheel reports two values, key + 'x' and key + 'y', each -1..1.
 export function buildSliders(container, defs, onChange) {
