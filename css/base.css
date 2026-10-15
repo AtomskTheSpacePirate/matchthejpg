@@ -122,7 +122,7 @@ button.is-waving::after { animation: wave 0.5s var(--ease); }
 }
 
 @media (max-width: 820px) {
-  .wordmark { font-size: 20px; }
+  .wordmark { font-size: 15px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
