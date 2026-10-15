@@ -1,7 +1,7 @@
-# Builds four-pixels/palettes.json: each photo's main colours, for the Match Pixel Colors game.
+# Builds match-pixel-colors/palettes.json: each photo's main colours, for the Match Pixel Colors game.
 # Run again whenever photos are added to or removed from pixel-photos-web (after
 # make-web-photos.ps1):
-#   powershell -ExecutionPolicy Bypass -File four-pixels\tools\build-palettes.ps1
+#   powershell -ExecutionPolicy Bypass -File match-pixel-colors\tools\build-palettes.ps1
 #
 # Each photo is shrunk to a small copy (so a "pixel" is the colour of a tiny area, not a noisy
 # dot) and its colours are grouped into CLUSTERS main colours. For each colour the file keeps
@@ -11,7 +11,7 @@
 $ErrorActionPreference = 'Stop'
 $root = Split-Path (Split-Path $PSScriptRoot)
 $photos = Join-Path $root 'pixel-photos-web'
-$out = Join-Path $root 'four-pixels\palettes.json'
+$out = Join-Path $root 'match-pixel-colors\palettes.json'
 
 Add-Type -AssemblyName System.Drawing
 Add-Type -ReferencedAssemblies System.Drawing -TypeDefinition @'

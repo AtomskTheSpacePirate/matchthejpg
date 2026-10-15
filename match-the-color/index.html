@@ -2,124 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0b0b0d">
-  <title>Match the Color Grading · recreate the photo edit from memory · matchthejpg</title>
-  <meta name="description" content="A photo editing game for your eye. Study an edited photo for 5 seconds, then rebuild the look from the unedited jpg with Lightroom-style sliders and colour wheels. Five rounds, scored on how close it looks.">
-  <link rel="canonical" href="https://matchthejpg.com/match-the-color/">
-  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="../apple-touch-icon.png">
-
-  <!-- Link previews (social apps, messengers) -->
-  <meta property="og:type" content="website">
-  <meta property="og:site_name" content="matchthejpg">
-  <meta property="og:url" content="https://matchthejpg.com/match-the-color/">
-  <meta property="og:title" content="Match the Color Grading · recreate the photo edit from memory">
-  <meta property="og:description" content="Study an edited photo for 5 seconds, then rebuild the look from the unedited jpg. Five rounds. How good is your eye?">
-  <meta property="og:image" content="https://matchthejpg.com/og-image.jpg">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Match the Color Grading · recreate the photo edit from memory">
-  <meta name="twitter:description" content="Study an edited photo for 5 seconds, then rebuild the look from the unedited jpg. Five rounds. How good is your eye?">
-  <meta name="twitter:image" content="https://matchthejpg.com/og-image.jpg">
-
-  <!-- Structured data for search engines -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "VideoGame",
-    "name": "Match the Color Grading",
-    "url": "https://matchthejpg.com/match-the-color/",
-    "description": "A browser game where you study an edited photo for 5 seconds, then recreate the edit from the unedited jpg using brightness, contrast, tone and colour wheel controls.",
-    "genre": ["Puzzle", "Photography"],
-    "gamePlatform": "Web browser",
-    "applicationCategory": "Game",
-    "operatingSystem": "Any",
-    "image": "https://matchthejpg.com/og-image.jpg",
-    "isPartOf": { "@type": "WebSite", "name": "matchthejpg", "url": "https://matchthejpg.com/" },
-    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
-  }
-  </script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../css/base.css">
-  <link rel="stylesheet" href="style.css">
+  <!-- The game moved to /match-the-color-grading/. This page only forwards old links there. -->
+  <title>Match the Color Grading · matchthejpg</title>
+  <meta name="robots" content="noindex">
+  <link rel="canonical" href="https://matchthejpg.com/match-the-color-grading/">
+  <meta http-equiv="refresh" content="0; url=../match-the-color-grading/">
+  <script>location.replace('../match-the-color-grading/' + location.search + location.hash);</script>
+  <style>body { margin: 0; padding: 24px; background: #0b0b0d; color: #f2f1ee; font: 16px system-ui, sans-serif; } a { color: #ff5b3a; }</style>
 </head>
 <body>
-  <div class="app" data-phase="ready">
-    <header class="top">
-      <a class="wordmark" href="../" aria-label="matchthejpg, all games">matchthe<span>jpg</span></a>
-      <div class="progress" aria-hidden="true">
-        <span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span>
-      </div>
-      <span class="tag" id="phase"></span>
-    </header>
-
-    <main class="play">
-      <section class="stage">
-        <div class="frames">
-          <figure class="frame frame-original">
-            <canvas id="original"></canvas>
-            <figcaption>The edit</figcaption>
-          </figure>
-          <figure class="frame frame-guess">
-            <canvas id="view"></canvas>
-            <figcaption>Your edit</figcaption>
-          </figure>
-        </div>
-      </section>
-
-      <aside class="panel">
-        <div class="pane pane-ready">
-          <p class="kicker">Match the Color Grading</p>
-          <h1>Recreate the edit from memory</h1>
-          <p>Five rounds, each harder than the last. You get 5 seconds with an edited photo, then the unedited one to rebuild the edit yourself.</p>
-          <button id="start" type="button" class="primary">Start</button>
-        </div>
-
-        <div class="pane pane-memorise">
-          <div class="ring">
-            <svg viewBox="0 0 120 120" aria-hidden="true">
-              <circle class="ring-track" cx="60" cy="60" r="54"></circle>
-              <circle class="ring-progress" cx="60" cy="60" r="54"></circle>
-            </svg>
-            <span id="count">5</span>
-          </div>
-          <p>Memorise the edit</p>
-        </div>
-
-        <div class="pane pane-edit">
-          <div id="sliders"></div>
-          <div class="actions">
-            <button id="reset" type="button">Reset</button>
-            <button id="submit" type="button" class="primary">Submit</button>
-          </div>
-        </div>
-
-        <div class="pane pane-result">
-          <div class="score"><span id="score">0</span><span class="unit">%</span></div>
-          <p class="score-label">match</p>
-          <div class="parts" id="parts"></div>
-          <ul class="hints" id="hints"></ul>
-          <button id="reveal" type="button" aria-expanded="false">Show the edit</button>
-          <div class="reveal-table" id="reveal-table" hidden></div>
-          <button id="next" type="button" class="primary">Next round</button>
-        </div>
-
-        <div class="pane pane-final">
-          <p class="score-label">Average match</p>
-          <div class="score"><span id="final-score">0</span><span class="unit">%</span></div>
-          <p class="verdict" id="verdict"></p>
-          <ol class="recap" id="recap"></ol>
-          <button id="again" type="button" class="primary">Play again</button>
-        </div>
-      </aside>
-    </main>
-  </div>
-
-  <script type="module" src="main.js"></script>
-  <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "8331b7b0d0094bd1ba023263e48c30f5"}'></script><!-- End Cloudflare Web Analytics -->
+  <p>Match the Color Grading has moved. <a href="../match-the-color-grading/">Go to the game</a>.</p>
 </body>
 </html>

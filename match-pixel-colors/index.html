@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0b0d">
+  <title>Match Pixel Colors · which photo are these pixels from? · matchthejpg</title>
+  <meta name="description" content="A colour game for your eye. You see a few real pixels from a photo and three photos with similar colours. Can you tell which one they came from? Twelve rounds, free in your browser.">
+  <link rel="canonical" href="https://matchthejpg.com/match-pixel-colors/">
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+
+  <!-- Link previews (social apps, messengers) -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="matchthejpg">
+  <meta property="og:url" content="https://matchthejpg.com/match-pixel-colors/">
+  <meta property="og:title" content="Match Pixel Colors · which photo are these pixels from?">
+  <meta property="og:description" content="Four real pixels, three photos with similar colours. Can you find where they came from?">
+  <meta property="og:image" content="https://matchthejpg.com/og-image.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Match Pixel Colors · which photo are these pixels from?">
+  <meta name="twitter:description" content="Four real pixels, three photos with similar colours. Can you find where they came from?">
+  <meta name="twitter:image" content="https://matchthejpg.com/og-image.jpg">
+
+  <!-- Structured data for search engines -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "VideoGame",
+    "name": "Match Pixel Colors",
+    "url": "https://matchthejpg.com/match-pixel-colors/",
+    "description": "A browser game where you see four real pixels from a photo and pick which of three similar-coloured photos they came from.",
+    "genre": ["Puzzle", "Photography"],
+    "gamePlatform": "Web browser",
+    "applicationCategory": "Game",
+    "operatingSystem": "Any",
+    "image": "https://matchthejpg.com/og-image.jpg",
+    "isPartOf": { "@type": "WebSite", "name": "matchthejpg", "url": "https://matchthejpg.com/" },
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+  }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app" data-phase="ready">
+    <header class="top">
+      <a class="wordmark" href="../" aria-label="matchthejpg, all games">matchthe<span>jpg</span></a>
+      <div class="progress" aria-hidden="true"></div>
+      <span class="tag" id="phase"></span>
+    </header>
+
+    <main class="play">
+      <section class="card pane-ready">
+        <p class="kicker">Match Pixel Colors</p>
+        <h1>Which photo are these pixels from?</h1>
+        <p>Twelve rounds, each harder than the last. You get a few real pixels from one photo, six at first and only three by the end, and three photos with similar colours. Pick the one they came from within 10 seconds.</p>
+        <button id="start" type="button" class="primary">Start</button>
+      </section>
+
+      <section class="pane-round" id="round">
+        <p class="prompt" id="prompt"></p>
+        <div class="band" id="band"></div>
+        <div class="timer" id="timer">
+          <span class="timer-track" aria-hidden="true"><span class="timer-bar" id="timer-bar"></span></span>
+          <span class="timer-secs" id="timer-secs" aria-label="Seconds left"></span>
+        </div>
+        <div class="options" id="options"></div>
+        <div class="after">
+          <p class="round-verdict" id="round-verdict" aria-live="polite"></p>
+          <button id="next" type="button" class="primary">Next round</button>
+        </div>
+      </section>
+
+      <section class="card pane-final">
+        <p class="score-label">Correct</p>
+        <div class="score"><span id="final-score">0</span><span class="unit" id="final-total">/ 12</span></div>
+        <p class="verdict" id="verdict"></p>
+        <ol class="recap" id="recap"></ol>
+        <button id="again" type="button" class="primary">Play again</button>
+        <a class="all-games" href="../">All games</a>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="main.js"></script>
+  <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "8331b7b0d0094bd1ba023263e48c30f5"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+</html>

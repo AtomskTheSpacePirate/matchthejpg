@@ -1,6 +1,6 @@
 # Makes web copies of the Match Pixel Colors photos: matchthepixelphotos/ (full size, kept off
 # GitHub) -> pixel-photos-web/ (what the game loads). Run again after adding photos:
-#   powershell -ExecutionPolicy Bypass -File four-pixels\tools\make-web-photos.ps1
+#   powershell -ExecutionPolicy Bypass -File match-pixel-colors\tools\make-web-photos.ps1
 # then rebuild the colours with build-palettes.ps1. Photos already converted and not changed
 # since are skipped. Copies are JPEGs with a long edge of LONG_EDGE pixels, like photos-web/.
 
