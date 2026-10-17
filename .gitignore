@@ -7,7 +7,9 @@ photos/
 matchthepixelphotos/
 
 # Match the Color Grading's private scoring data and the page that fits the scoring to it
-match-the-color-grading/tools/
+# (the daily puzzle maker in the same folder is pushed as usual)
+match-the-color-grading/tools/unedited-ratings.json
+match-the-color-grading/tools/fit.html
 
 # Windows and OneDrive clutter
 Thumbs.db

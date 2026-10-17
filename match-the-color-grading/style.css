@@ -28,7 +28,9 @@ body { overflow: hidden; }
 }
 
 .app[data-phase='ready'] .progress,
-.app[data-phase='final'] .progress {
+.app[data-phase='final'] .progress,
+.app[data-mode='daily'] .progress,
+.app[data-mode='practice'] .progress {
   visibility: hidden;
 }
 
@@ -117,12 +119,14 @@ body { overflow: hidden; }
 
 .frame-original { display: none; }
 
-.app[data-phase='result'] .frame-original {
+.app[data-phase='result'] .frame-original,
+.app[data-mode='practice'][data-phase='edit'] .frame-original {
   display: flex;
   animation: rise 0.5s var(--ease) both;
 }
 
-.app[data-phase='result'] .frame figcaption { display: block; }
+.app[data-phase='result'] .frame figcaption,
+.app[data-mode='practice'][data-phase='edit'] .frame figcaption { display: block; }
 
 #view {
   transition: opacity 0.26s var(--ease), transform 0.45s var(--ease), filter 0.26s var(--ease);
@@ -414,6 +418,57 @@ body { overflow: hidden; }
 
 .pane-result #reveal { margin-top: 20px; }
 .pane-result #next { margin-top: 10px; }
+
+/* Daily challenge: the start card's second button, streak and countdown lines, and the end of
+   the daily's result card (title, streak, Share and Free play, countdown). */
+.pane-ready #start,
+.pane-ready #practice { margin-top: 10px; }
+
+.pane p.streak {
+  margin-top: 16px;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.pane p.countdown {
+  margin-top: 6px;
+  font-size: 13px;
+}
+
+.pane p.countdown:empty,
+.pane p.streak:empty { display: none; }
+
+.daily-extra {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.daily-extra[hidden] { display: none; }
+
+.pane p.daily-title {
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.pane p.daily-title + .streak { margin-top: 6px; }
+
+.daily-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+  margin-top: 16px;
+}
+
+.pane-result .daily-actions button { margin-top: 0; }
 
 .reveal-table {
   display: grid;

@@ -62,8 +62,35 @@ export function makeRound(count = 4, wheelCount = WHEELS.length) {
   return { look };
 }
 
+const MAX_UNEDITED_SCORE = 45; // an edit must be strong enough that doing nothing scores at most this
+const MAX_EDIT_TRIES = 20;
+
+// A random edit (see makeRound) that is clearly visible on the photo the scorer currently has:
+// one where submitting the unedited photo would score at most MAX_UNEDITED_SCORE. Sliders can
+// cancel each other out, so edits are rolled again; after MAX_EDIT_TRIES the most visible one is
+// used. Shared by free play and the daily puzzle maker (tools/make-dailies.html).
+export function makeVisibleRound(scorer, count, wheelCount) {
+  let best = null;
+  let bestScore = Infinity;
+  for (let i = 0; i < MAX_EDIT_TRIES; i++) {
+    const next = makeRound(count, wheelCount);
+    const unedited = scorer.breakdown(next.look, {}).score;
+    if (unedited <= MAX_UNEDITED_SCORE) return next;
+    if (unedited < bestScore) {
+      best = next;
+      bestScore = unedited;
+    }
+  }
+  return best;
+}
+
 // The photo folder, found from this script's own address so any page in any folder can use it.
 const PHOTOS = new URL('../photos-web/', import.meta.url);
+
+// The full address of a photo in photos-web/ from its file name.
+export function photoUrl(name) {
+  return new URL(name, PHOTOS).href;
+}
 
 // The photo pool: every image listed in photos-web/manifest.json. serve.ps1 rebuilds that list
 // from the folder whenever it is requested, so adding a photo to photos-web is enough.
@@ -71,7 +98,7 @@ export async function loadPhotos() {
   const response = await fetch(new URL('manifest.json', PHOTOS), { cache: 'no-cache' });
   if (!response.ok) throw new Error('Photo list not found');
   const names = await response.json();
-  return names.map((name) => new URL(name, PHOTOS).href);
+  return names.map(photoUrl);
 }
 
 // Fisher-Yates shuffle; returns a new array.

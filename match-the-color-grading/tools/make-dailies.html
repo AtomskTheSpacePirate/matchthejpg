@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Daily puzzle maker</title>
+  <style>
+    body { margin: 0; padding: 24px; max-width: 720px; background: #0b0b0d; color: #f2f1ee; font: 15px/1.5 system-ui, sans-serif; }
+    label { display: block; margin: 12px 0; }
+    input { margin-left: 8px; padding: 4px 6px; font: inherit; }
+    button { margin-top: 8px; padding: 10px 18px; border: 0; border-radius: 10px; background: #ff5b3a; color: #1c0a05; font: inherit; font-weight: 600; cursor: pointer; }
+    button:disabled { opacity: 0.5; cursor: default; }
+    .muted { color: #8b8a90; }
+  </style>
+</head>
+<body>
+  <!-- Local tool, not part of the game: makes ../dailies.json, the Match the Color Grading daily
+       puzzles. Open it through serve.ps1 at
+       http://localhost:8080/match-the-color-grading/tools/make-dailies.html
+       Puzzles already in dailies.json are kept exactly as they are; new days are added after them
+       until the file reaches the chosen number of days past today. Each puzzle is a photo from
+       photos-web/ and an edit made by the game's own generator (rounds.js), always at the hardest
+       free-play level, so every player gets the same puzzle on the same day. -->
+  <h1>Daily puzzle maker</h1>
+  <p class="muted" id="existing">Checking for an existing dailies.json…</p>
+  <label>First day (only used when starting a new file)<input type="date" id="start"></label>
+  <label>Days of puzzles ahead of today<input type="number" id="ahead" value="365" min="1" max="2000"></label>
+  <button id="go" type="button">Make puzzles</button>
+  <p id="status"></p>
+
+  <script type="module">
+    import { loadPhotos, makeVisibleRound } from '../rounds.js';
+    import { createScorer } from '../score.js';
+    import { todayKey, dayIndex } from '../daily.js';
+
+    const SLIDERS = 4; // the daily is always the hardest free-play round (see DIFFICULTY in main.js)
+    const WHEELS = 3;
+    const NO_REPEAT = 42; // days before a photo can come back (fewer when there aren't enough photos)
+
+    const startInput = document.getElementById('start');
+    const aheadInput = document.getElementById('ahead');
+    const goButton = document.getElementById('go');
+    const statusEl = document.getElementById('status');
+    const existingEl = document.getElementById('existing');
+
+    const existing = await fetch('../dailies.json', { cache: 'no-cache' })
+      .then((r) => (r.ok ? r.json() : null))
+      .catch(() => null);
+    startInput.value = existing ? existing.start : todayKey();
+    startInput.disabled = Boolean(existing);
+    existingEl.textContent = existing
+      ? 'dailies.json has ' + existing.puzzles.length + ' days from ' + existing.start + '. They are kept; new days are added after them.'
+      : 'No dailies.json yet: a new one is started on the first day below (Daily #1).';
+
+    const images = new Map();
+    function loadImage(url) {
+      if (!images.has(url)) {
+        const img = new Image();
+        img.src = url;
+        images.set(url, img.decode().then(() => img));
+      }
+      return images.get(url);
+    }
+
+    // One puzzle per line, so the file stays readable and changes show up clearly in Git.
+    function format(file) {
+      return '{\n"start": ' + JSON.stringify(file.start) + ',\n"puzzles": [\n' +
+        file.puzzles.map((p) => JSON.stringify(p)).join(',\n') + '\n]\n}\n';
+    }
+
+    // Saves straight into a folder where the browser allows it (Chrome, Edge), otherwise downloads.
+    async function save(text) {
+      if (window.showSaveFilePicker) {
+        try {
+          const handle = await showSaveFilePicker({
+            suggestedName: 'dailies.json',
+            types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }],
+          });
+          const writer = await handle.createWritable();
+          await writer.write(text);
+          await writer.close();
+          return 'Saved. If you saved it into the match-the-color-grading folder, the game uses it now.';
+        } catch (e) {
+          if (e.name === 'AbortError') return 'Not saved. Press the button again to retry.';
+        }
+      }
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+      link.download = 'dailies.json';
+      link.click();
+      return 'Downloaded dailies.json. Move it into the match-the-color-grading folder, replacing the old one.';
+    }
+
+    goButton.addEventListener('click', async () => {
+      goButton.disabled = true;
+      const file = existing ? { start: existing.start, puzzles: existing.puzzles.slice() } : { start: startInput.value, puzzles: [] };
+      const need = dayIndex(todayKey()) + Number(aheadInput.value) - dayIndex(file.start) + 1;
+      const urls = await loadPhotos();
+      const names = urls.map((url) => decodeURIComponent(url.split('/').pop()));
+      const gap = Math.min(NO_REPEAT, names.length - 1);
+      const scorer = createScorer();
+      const before = file.puzzles.length;
+      while (file.puzzles.length < need) {
+        const recent = file.puzzles.slice(-gap).map((p) => p.photo);
+        const choices = names.filter((n) => !recent.includes(n));
+        const photo = choices[Math.floor(Math.random() * choices.length)];
+        scorer.setImage(await loadImage(urls[names.indexOf(photo)]));
+        file.puzzles.push({ photo, look: makeVisibleRound(scorer, SLIDERS, WHEELS).look });
+        if (file.puzzles.length % 10 === 0) statusEl.textContent = 'Made ' + (file.puzzles.length - before) + ' of ' + (need - before) + '…';
+      }
+      const added = file.puzzles.length - before;
+      statusEl.textContent = (added ? 'Added ' + added + ' days.' : 'Nothing to add, the file already covers that.') +
+        ' The file now runs until Daily #' + file.puzzles.length + '. ' + await save(format(file));
+      goButton.disabled = false;
+    });
+  </script>
+</body>
+</html>

@@ -75,8 +75,12 @@
         <div class="pane pane-ready">
           <p class="kicker">Match the Color Grading</p>
           <h1>Recreate the edit from memory</h1>
-          <p>Five rounds, each harder than the last. You get 5 seconds with an edited photo, then the unedited one to rebuild the edit yourself.</p>
-          <button id="start" type="button" class="primary">Start</button>
+          <p>You get 5 seconds with an edited photo, then the unedited one to rebuild the edit yourself. One hard round a day in today's challenge, five rounds of free play, or practice with the edit always in view.</p>
+          <button id="daily" type="button" class="primary" disabled>Today's challenge</button>
+          <button id="start" type="button" class="primary">Free play</button>
+          <button id="practice" type="button" class="primary">Practice</button>
+          <p class="streak" id="streak"></p>
+          <p class="countdown" id="ready-countdown"></p>
         </div>
 
         <div class="pane pane-memorise">
@@ -106,6 +110,15 @@
           <button id="reveal" type="button" aria-expanded="false">Show the edit</button>
           <div class="reveal-table" id="reveal-table" hidden></div>
           <button id="next" type="button" class="primary">Next round</button>
+          <div class="daily-extra" id="daily-extra" hidden>
+            <p class="daily-title" id="daily-title"></p>
+            <p class="streak" id="result-streak"></p>
+            <div class="daily-actions">
+              <button id="share" type="button" class="primary">Share</button>
+              <button id="free" type="button" class="primary">Free play</button>
+            </div>
+            <p class="countdown" id="result-countdown"></p>
+          </div>
         </div>
 
         <div class="pane pane-final">
